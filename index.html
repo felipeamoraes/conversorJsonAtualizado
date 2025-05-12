@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Corretor de JSON</title>
+  <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/darcula.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/eclipse.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body class="bg-light min-vh-100 d-flex flex-column transition-colors" data-bs-theme="dark" id="app-container">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="#">
+        <i class="fas fa-tools me-2"></i>
+        <span>Corretor de Campos JSON</span>
+      </a>
+      <div>
+        <button id="themeToggle" class="btn btn-sm btn-outline-light">
+          <i class="fas fa-moon dark-mode-hide"></i>
+          <i class="fas fa-sun dark-mode-show"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4 flex-grow-1">
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">
+          <i class="fas fa-file-import me-2"></i>Importar JSON
+        </h5>
+        
+        <div id="dropZone" class="border border-2 border-dashed rounded p-5 text-center mb-3 cursor-pointer">
+          <i class="fas fa-cloud-upload-alt text-primary fs-2 mb-3"></i>
+          <p class="mb-2">Arraste e solte um arquivo JSON aqui ou</p>
+          <label for="jsonFile" class="btn btn-primary mb-0">
+            Selecionar Arquivo
+          </label>
+          <input type="file" id="jsonFile" accept=".json" class="d-none" />
+        </div>
+        
+        <div id="fileInfo" class="alert alert-info d-flex align-items-center d-none">
+          <i class="fas fa-file-alt me-2"></i>
+          <span id="fileName"></span>
+          <button id="removeFile" class="btn-close ms-auto" aria-label="Close"></button>
+        </div>
+        
+        <!-- Download sample JSON link -->
+        <div class="text-center mt-2">
+          <a href="{{ url_for('static', filename='sample.json') }}" download class="text-decoration-none">
+            <small><i class="fas fa-download me-1"></i> Baixar JSON de exemplo</small>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3 mb-md-0">
+            <div class="border rounded overflow-hidden h-100 d-flex flex-column">
+              <div class="bg-light p-2 d-flex align-items-center justify-content-between">
+                <h6 class="mb-0">
+                  <i class="fas fa-code me-2"></i>JSON Original
+                </h6>
+                <button id="copyOriginal" class="btn btn-sm btn-outline-secondary" title="Copiar para área de transferência">
+                  <i class="far fa-copy"></i>
+                </button>
+              </div>
+              <div id="originalEditorContainer" class="flex-grow-1" style="min-height: 400px"></div>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <div class="border rounded overflow-hidden h-100 d-flex flex-column">
+              <div class="bg-light p-2 d-flex align-items-center justify-content-between">
+                <h6 class="mb-0">
+                  <i class="fas fa-check-circle me-2"></i>JSON Corrigido
+                </h6>
+                <button id="copyFixed" class="btn btn-sm btn-outline-secondary" title="Copiar para área de transferência">
+                  <i class="far fa-copy"></i>
+                </button>
+              </div>
+              <div id="fixedEditorContainer" class="flex-grow-1" style="min-height: 400px"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center align-items-center mt-4">
+          <button id="correctBtn" class="btn btn-primary" disabled>
+            <i class="fas fa-magic me-2"></i>Corrigir JSON
+          </button>
+          <a id="downloadLink" class="btn btn-success d-none">
+            <i class="fas fa-download me-2"></i>Baixar JSON Corrigido
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title mb-3">
+          <i class="fas fa-wrench me-2"></i>Configurações de Correção
+        </h5>
+        
+        <div class="row g-3">
+          <div class="col-md-6 col-lg-3">
+            <div class="form-check p-3 bg-light rounded">
+              <input class="form-check-input" type="checkbox" id="fixCodigo" checked>
+              <label class="form-check-label" for="fixCodigo">
+                Código da Concessora (padStart 3)
+              </label>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <div class="form-check p-3 bg-light rounded">
+              <input class="form-check-input" type="checkbox" id="fixCpf" checked>
+              <label class="form-check-label" for="fixCpf">
+                CPF (padStart 11)
+              </label>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <div class="form-check p-3 bg-light rounded">
+              <input class="form-check-input" type="checkbox" id="fixNumeroInscricaoEmpregador" checked>
+              <label class="form-check-label" for="fixNumeroInscricaoEmpregador">
+                Número Inscrição Empregador (toString)
+              </label>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <div class="form-check p-3 bg-light rounded">
+              <input class="form-check-input" type="checkbox" id="fixNumeroInscricaoEstabelecimento" checked>
+              <label class="form-check-label" for="fixNumeroInscricaoEstabelecimento">
+                Número Inscrição Estabelecimento (toString)
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <footer class="bg-dark text-white py-4 mt-auto">
+    <div class="container text-center">
+      <p class="mb-0">Ferramenta de Correção de Campos JSON <span id="currentYear"></span></p>
+    </div>
+  </footer>
+
+  <!-- Toast notifications -->
+  <div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;"></div>
+
+  <!-- Loading overlay -->
+  <div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-none align-items-center justify-content-center" style="z-index: 1090;">
+    <div class="card p-4 text-center">
+      <div class="spinner-border text-primary mx-auto mb-3" role="status">
+        <span class="visually-hidden">Processando...</span>
+      </div>
+      <p class="mb-0">Processando...</p>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/lint.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/json-lint.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsonlint/1.6.0/jsonlint.min.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
